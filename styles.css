@@ -80,13 +80,21 @@ display: block; /* Делает изображение блочным элеме
 margin: 0 auto; /* Центрирует изображение */
 }
 input[type="text"],
-input[type="password"],
+input[type="passwordw"],
 input[type="search"] {
 margin-bottom: 10px;
 padding: 10px;
 border: 1px solid #ccc;
 border-radius: 5px;
 width: 700px;
+}
+input[type="login"],
+input[type="password"] {
+margin-bottom: 10px;
+padding: 10px;
+border: 1px solid #ccc;
+border-radius: 5px;
+width: 630px;
 }
 textarea {
 margin-bottom: 1px;
@@ -104,6 +112,21 @@ border: none;
 border-radius: 5px;
 cursor: pointer;
 width: 150px; /* Ширина кнопки */
+height: 35px; /* Высота кнопки */
+padding: 10px 20px; /* Внутренние отступы: сверху/снизу и слева/справа */
+font-size: 12px; /* Размер шрифта */
+font-weight: bold; /* Жирный шрифт */
+border: none; /* Убираем рамку */
+}
+
+.bts {
+padding: 10px;
+background-color: #3A3A3A;
+color: #00000;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+width: 50px; /* Ширина кнопки */
 height: 35px; /* Высота кнопки */
 padding: 10px 20px; /* Внутренние отступы: сверху/снизу и слева/справа */
 font-size: 12px; /* Размер шрифта */
