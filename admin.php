@@ -692,6 +692,13 @@ if ($searching) {
                 <?= escape((string)($post['title'] ?? '')) ?>
             </h2>
 
+	<?php if (!empty($post['created_at'])): ?>
+	<p style="margin: -12px 0 12px; text-align: left; font-size: 0.85rem; color: #666;">
+	Опубликовано: <?= escape((string)$post['created_at']) ?>
+	</p>
+	<?php endif; ?>
+
+
             <?php
             $image = $post['image'] ?? null;
 
