@@ -9,8 +9,6 @@ session_start();
  */
 const ADMIN_LOGIN = 'admin';
 const ADMIN_PASSWORD_HASH = 'ВСТАВЬТЕ_ХЕШ_СЮДА';
-
-
 const POSTS_FILE = __DIR__ . '/posts.json';
 const UPLOAD_DIR = __DIR__ . '/uploads';
 const ARCHIVE_DIR = __DIR__ . '/archive';
@@ -51,7 +49,9 @@ function savePosts(array $posts): void
     );
 
     if ($json === false || file_put_contents(POSTS_FILE, $json, LOCK_EX) === false) {
-        throw new RuntimeException('Не удалось сохранить записи. Проверьте права доступа к папке.');
+        throw new RuntimeException(
+            'Не удалось сохранить записи. Проверьте права доступа к папке.'
+        );
     }
 }
 
@@ -77,6 +77,76 @@ function checkCsrfToken(): void
         http_response_code(403);
         exit('Ошибка проверки формы. Обновите страницу и попробуйте снова.');
     }
+}
+
+function containsSearchTerm(string $text, string $query): bool
+{
+    if (function_exists('mb_stripos')) {
+        return mb_stripos($text, $query, 0, 'UTF-8') !== false;
+    }
+
+    return stripos($text, $query) !== false;
+}
+
+/**
+ * Ищет записи в HTML-файлах архива.
+ * Ожидаемая структура архива: записи внутри элементов <article>.
+ */
+function searchArchivePosts(string $query): array
+{
+    $results = [];
+    $archiveFiles = glob(ARCHIVE_DIR . '/*.html') ?: [];
+
+    foreach ($archiveFiles as $archiveFile) {
+        if (!is_file($archiveFile)) {
+            continue;
+        }
+
+        $html = file_get_contents($archiveFile);
+
+        if ($html === false) {
+            continue;
+        }
+
+        preg_match_all(
+            '~<article\b[^>]*>(.*?)</article>~si',
+            $html,
+            $articles
+        );
+
+        foreach ($articles[1] ?? [] as $articleHtml) {
+            $title = '';
+
+            if (preg_match('~<h2\b[^>]*>(.*?)</h2>~si', $articleHtml, $titleMatch)) {
+                $title = html_entity_decode(
+                    strip_tags($titleMatch[1]),
+                    ENT_QUOTES | ENT_HTML5,
+                    'UTF-8'
+                );
+                $title = trim(preg_replace('/\s+/u', ' ', $title) ?? $title);
+            }
+
+            $content = html_entity_decode(
+                strip_tags($articleHtml),
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            );
+            $content = trim(preg_replace('/\s+/u', ' ', $content) ?? $content);
+
+            if (
+                containsSearchTerm($title, $query) ||
+                containsSearchTerm($content, $query)
+            ) {
+                $results[] = [
+                    'title' => $title !== '' ? $title : 'Без названия',
+                    'content' => $content,
+                    'archive' => basename($archiveFile),
+                ];
+            }
+        }
+    }
+
+    return $results;
 }
 
 /**
@@ -108,7 +178,6 @@ function formatContent(string $content): string
         $escaped
     ) ?? $escaped;
 
-    // Ссылки обрабатываются отдельно от HTML-тегов форматирования.
     $parts = preg_split(
         '/(<\/?(?:strong|em|u)>)/',
         $formatted,
@@ -131,7 +200,6 @@ function formatContent(string $content): string
                 $url = $matches[0];
                 $trailing = '';
 
-                // Убираем обычную пунктуацию в конце ссылки.
                 while ($url !== '' && preg_match('/[.,!?;:]$/u', $url)) {
                     $trailing = substr($url, -1) . $trailing;
                     $url = substr($url, 0, -1);
@@ -150,6 +218,7 @@ function formatContent(string $content): string
             $part
         ) ?? $part;
     }
+
     unset($part);
 
     return nl2br(implode('', $parts), false);
@@ -157,7 +226,10 @@ function formatContent(string $content): string
 
 function handleImageUpload(): ?string
 {
-    if (!isset($_FILES['image']) || $_FILES['image']['error'] === UPLOAD_ERR_NO_FILE) {
+    if (
+        !isset($_FILES['image']) ||
+        $_FILES['image']['error'] === UPLOAD_ERR_NO_FILE
+    ) {
         return null;
     }
 
@@ -183,8 +255,8 @@ function handleImageUpload(): ?string
 
     $allowedTypes = [
         IMAGETYPE_JPEG => 'jpg',
-        IMAGETYPE_PNG  => 'png',
-        IMAGETYPE_GIF  => 'gif',
+        IMAGETYPE_PNG => 'png',
+        IMAGETYPE_GIF => 'gif',
         IMAGETYPE_WEBP => 'webp',
     ];
 
@@ -221,7 +293,6 @@ function archivePosts(array $posts): void
     $archiveName = date('Y-m-d_H-i-s');
     $archivePath = ARCHIVE_DIR . '/' . $archiveName . '.html';
 
-    // Не перезаписываем архив, если его создали в ту же секунду.
     if (is_file($archivePath)) {
         $archiveName .= '_' . bin2hex(random_bytes(3));
         $archivePath = ARCHIVE_DIR . '/' . $archiveName . '.html';
@@ -234,7 +305,9 @@ function archivePosts(array $posts): void
         !mkdir($archiveUploads, 0755, true) &&
         !is_dir($archiveUploads)
     ) {
-        throw new RuntimeException('Не удалось создать папку для архивных изображений.');
+        throw new RuntimeException(
+            'Не удалось создать папку для архивных изображений.'
+        );
     }
 
     $htmlPosts = '';
@@ -243,7 +316,6 @@ function archivePosts(array $posts): void
         $title = escape((string)($post['title'] ?? ''));
         $content = formatContent((string)($post['content'] ?? ''));
         $imageHtml = '';
-
         $image = $post['image'] ?? null;
 
         if (
@@ -253,8 +325,14 @@ function archivePosts(array $posts): void
             $source = UPLOAD_DIR . '/' . $image;
             $destination = $archiveUploads . '/' . $image;
 
-            if (is_file($source) && !is_file($destination) && !copy($source, $destination)) {
-                throw new RuntimeException('Не удалось скопировать изображение в архив.');
+            if (
+                is_file($source) &&
+                !is_file($destination) &&
+                !copy($source, $destination)
+            ) {
+                throw new RuntimeException(
+                    'Не удалось скопировать изображение в архив.'
+                );
             }
 
             if (is_file($destination)) {
@@ -274,28 +352,28 @@ function archivePosts(array $posts): void
     $html = '<!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Архив записей ' . escape($archiveName) . '</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 0 16px;
-            line-height: 1.6;
-        }
-        .post {
-            padding: 20px 0;
-            border-bottom: 1px solid #ccc;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Архив записей ' . escape($archiveName) . '</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+body {
+    font-family: Arial, sans-serif;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 16px;
+    line-height: 1.6;
+}
+.post {
+    padding: 20px 0;
+    border-bottom: 1px solid #ccc;
+}
+</style>
 </head>
 <body>
-    <h1>Архив записей</h1>
-    <p>Создан: ' . escape(date('Y-m-d H:i:s')) . '</p>
-    ' . $htmlPosts . '
+<h1>Архив записей</h1>
+<p>Создан: ' . escape(date('Y-m-d H:i:s')) . '</p>
+' . $htmlPosts . '
 </body>
 </html>';
 
@@ -303,7 +381,6 @@ function archivePosts(array $posts): void
         throw new RuntimeException('Не удалось создать HTML-файл архива.');
     }
 
-    // Сначала очищаем список постов. Если запись не удалась, исходные картинки сохраняются.
     savePosts([]);
 
     if (is_dir(UPLOAD_DIR)) {
@@ -322,7 +399,6 @@ function archivePosts(array $posts): void
 $error = '';
 $loginError = '';
 
-// Выход из панели.
 if (isset($_GET['logout'])) {
     $_SESSION = [];
 
@@ -344,8 +420,10 @@ if (isset($_GET['logout'])) {
     redirectToSelf();
 }
 
-// Авторизация.
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'login') {
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    ($_POST['action'] ?? '') === 'login'
+) {
     $login = (string)($_POST['login'] ?? '');
     $password = (string)($_POST['password'] ?? '');
 
@@ -362,7 +440,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'login
     $loginError = 'Неверный логин или пароль.';
 }
 
-// До входа отображается только форма авторизации.
 if (empty($_SESSION['authorized'])):
 ?>
 <!DOCTYPE html>
@@ -374,41 +451,40 @@ if (empty($_SESSION['authorized'])):
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="page">
-        <h2 class="pt">Вход в панель управления</h2>
+<div class="page">
+    <h2 class="pt">Вход в панель управления</h2>
 
-        <?php if ($loginError !== ''): ?>
-            <p><?= escape($loginError) ?></p>
-        <?php endif; ?>
+    <?php if ($loginError !== ''): ?>
+        <p><?= escape($loginError) ?></p>
+    <?php endif; ?>
 
-        <form method="post">
-            <input type="hidden" name="action" value="login">
-            <input
-                type="text"
-                name="login"
-                placeholder="Логин"
-                autocomplete="username"
-                required
-            >
-            <br>
-            <input
-                type="password"
-                name="password"
-                placeholder="Пароль"
-                autocomplete="current-password"
-                required
-            >
-            <br>
-            <button type="submit" class="bt">Войти</button>
-        </form>
-    </div>
+    <form method="post">
+        <input type="hidden" name="action" value="login">
+        <input
+            type="text"
+            name="login"
+            placeholder="Логин"
+            autocomplete="username"
+            required
+        >
+        <br>
+        <input
+            type="password"
+            name="password"
+            placeholder="Пароль"
+            autocomplete="current-password"
+            required
+        >
+        <br>
+        <button type="submit" class="bt">Войти</button>
+    </form>
+</div>
 </body>
 </html>
 <?php
 exit;
 endif;
 
-// Добавление, удаление и архивирование доступны только после авторизации.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrfToken();
 
@@ -421,7 +497,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $content = trim((string)($_POST['content'] ?? ''));
 
             if ($title === '' || $content === '') {
-                throw new RuntimeException('Заполните название и текст записи.');
+                throw new RuntimeException(
+                    'Заполните название и текст записи.'
+                );
             }
 
             $image = handleImageUpload();
@@ -448,7 +526,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     if (
                         is_string($image) &&
-                        preg_match('/\A[a-f0-9]{32}\.(jpg|png|gif|webp)\z/', $image)
+                        preg_match(
+                            '/\A[a-f0-9]{32}\.(jpg|png|gif|webp)\z/',
+                            $image
+                        )
                     ) {
                         $imagePath = UPLOAD_DIR . '/' . $image;
 
@@ -480,6 +561,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $posts = loadPosts();
+
+$query = trim((string)($_GET['q'] ?? ''));
+
+if (function_exists('mb_substr')) {
+    $query = mb_substr($query, 0, 200, 'UTF-8');
+} else {
+    $query = substr($query, 0, 200);
+}
+
+$searching = $query !== '';
+$visiblePosts = $posts;
+$archiveResults = [];
+
+if ($searching) {
+    $visiblePosts = [];
+
+    foreach ($posts as $post) {
+        if (!is_array($post)) {
+            continue;
+        }
+
+        $title = (string)($post['title'] ?? '');
+        $content = (string)($post['content'] ?? '');
+
+        if (
+            containsSearchTerm($title, $query) ||
+            containsSearchTerm($content, $query)
+        ) {
+            $visiblePosts[] = $post;
+        }
+    }
+
+    $archiveResults = searchArchivePosts($query);
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -500,10 +615,18 @@ $posts = loadPosts();
     <h2 class="pt">Добавить новую запись</h2>
 
     <form method="post" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="<?= escape(csrfToken()) ?>">
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="<?= escape(csrfToken()) ?>"
+        >
         <input type="hidden" name="action" value="add">
-
-        <input type="text" name="title" placeholder="Название записи" required>
+        <input
+            type="text"
+            name="title"
+            placeholder="Название записи"
+            required
+        >
         <br>
 
         <div class="format-buttons">
@@ -541,16 +664,33 @@ $posts = loadPosts();
             end,
             'select'
         );
+
         textarea.focus();
     }
     </script>
 
-    <br><br><hr><br><br>
+    <br><br>
+    <hr>
+    <br><br>
+
     <h2 class="pt">Существующие записи</h2>
 
-    <?php foreach ($posts as $post): ?>
+    <?php if ($searching): ?>
+        <p>
+            Найдено в опубликованных записях: <?= count($visiblePosts) ?>.
+            Найдено в архиве: <?= count($archiveResults) ?>.
+        </p>
+    <?php endif; ?>
+
+    <?php if ($searching && !$visiblePosts && !$archiveResults): ?>
+        <p>По запросу «<?= escape($query) ?>» ничего не найдено.</p>
+    <?php endif; ?>
+
+    <?php foreach ($visiblePosts as $post): ?>
         <div class="p">
-            <h2 class="pt"><?= escape((string)($post['title'] ?? '')) ?></h2>
+            <h2 class="pt">
+                <?= escape((string)($post['title'] ?? '')) ?>
+            </h2>
 
             <?php
             $image = $post['image'] ?? null;
@@ -576,7 +716,11 @@ $posts = loadPosts();
                 method="post"
                 onsubmit="return confirm('Удалить эту запись?');"
             >
-                <input type="hidden" name="csrf_token" value="<?= escape(csrfToken()) ?>">
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="<?= escape(csrfToken()) ?>"
+                >
                 <input type="hidden" name="action" value="delete">
                 <input
                     type="hidden"
@@ -589,13 +733,59 @@ $posts = loadPosts();
         <hr>
     <?php endforeach; ?>
 
+    <?php if ($searching && $archiveResults): ?>
+        <h2 class="pt">Найдено в архиве</h2>
+
+        <?php foreach ($archiveResults as $result): ?>
+            <article class="p">
+                <h3 class="pt"><?= escape($result['title']) ?></h3>
+
+                <p class="pg">
+                    <?= nl2br(escape($result['content']), false) ?>
+                </p>
+
+                <p>
+                    Архив:
+                    <a href="<?= 'archive/' . rawurlencode($result['archive']) ?>">
+                        <?= escape($result['archive']) ?>
+                    </a>
+                </p>
+            </article>
+            <hr>
+        <?php endforeach; ?>
+    <?php endif; ?>
+
     <form
         method="post"
         onsubmit="return confirm('Создать архив и очистить текущие записи и изображения?');"
     >
-        <input type="hidden" name="csrf_token" value="<?= escape(csrfToken()) ?>">
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="<?= escape(csrfToken()) ?>"
+        >
         <input type="hidden" name="action" value="archive">
         <button type="submit" class="bt">Архивировать</button>
+    </form>
+
+    <form method="get" action="" style="margin-top: 24px;">
+        <label for="admin-post-search">Поиск по записям и архиву</label>
+        <br>
+        <input
+            type="search"
+            id="admin-post-search"
+            name="q"
+            value="<?= escape($query) ?>"
+            maxlength="200"
+            placeholder="Введите название или текст записи"
+        >
+        <button type="submit" class="bt">Найти</button>
+
+        <?php if ($searching): ?>
+            <a href="<?= escape(strtok($_SERVER['REQUEST_URI'], '?')) ?>">
+                Сбросить
+            </a>
+        <?php endif; ?>
     </form>
 </div>
 </body>
