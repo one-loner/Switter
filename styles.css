@@ -1,129 +1,112 @@
 body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Roboto', Sans-Serif; /* Используем шрифт Roboto */
-    font-size: 16px;
-    background: #121212; /* Тёмный фон */
-    color: #fff; /* Белый текст */
+margin: 0;
+padding: 0;
+font-family: 'Roboto', Sans-Serif; /* Используем шрифт Roboto */
+font-size: 16px;
+background: #121212; /* Тёмный фон */
+color: #fff; /* Белый текст */
 }
-
 .page {
-    display: block;
-    max-width: 724px; /* Максимальная ширина страницы */
-    margin-left: auto;
-    margin-right: auto;
+display: block;
+max-width: 724px; /* Максимальная ширина страницы */
+margin-left: auto;
+margin-right: auto;
 }
-
 .p {
-    display: block;
-    margin: 20px;
-    padding: 10px 22px;
-    border-radius: 3px;
-    background: #1E1E1E; /* Тёмный фон для блока */
-    outline: 1px solid #131; /* Тёмная рамка */
+display: block;
+margin: 20px;
+padding: 10px 22px;
+border-radius: 3px;
+background: #1E1E1E; /* Тёмный фон для блока */
+outline: 1px solid #131; /* Тёмная рамка */
 }
-
 .bt, .pt, .pp, .pi {
-    text-decoration: none;
-    display: block;
-    margin: 14px 0;
-    padding: 2px 0;
+text-decoration: none;
+display: block;
+margin: 14px 0;
+padding: 2px 0;
 }
-
 .at {
-    font-size: 2.5em; /* Размер заголовка */
-    font-weight: normal;
-    text-align: center;
-    color: #ccc; /* Цвет заголовка */
+font-size: 2.5em; /* Размер заголовка */
+font-weight: normal;
+text-align: center;
+color: #ccc; /* Цвет заголовка */
 }
-
 .pt {
-    font-size: 1.5em; /* Размер подзаголовка */
-    font-weight: normal;
-    margin-bottom: 4px;
-    margin-top: 4px;
-    color: #ccc; /* Цвет подзаголовка */
-    text-align: center; 
-    font-weight: bold;
+font-size: 1.5em; /* Размер подзаголовка */
+font-weight: normal;
+margin-bottom: 4px;
+margin-top: 4px;
+color: #ccc; /* Цвет подзаголовка */
+text-align: center;
+font-weight: bold;
 }
-
 .pi {
-    margin: 10px 0;
-    padding: 0;
-    color: #888; /* Цвет для дополнительных элементов */
+margin: 10px 0;
+padding: 0;
+color: #888; /* Цвет для дополнительных элементов */
 }
-
 .pp {
-    margin-top: 4px;
-    margin-bottom: 4px;
+margin-top: 4px;
+margin-bottom: 4px;
 }
-
 .pg {
-    font-size: 1.1em;
-    padding: 0.25em;
-    color: #ccc; /* Цвет текста */
+font-size: 1.1em;
+padding: 0.25em;
+color: #ccc; /* Цвет текста */
 }
-
 img {
-    max-width: 100%; /* Ограничиваем ширину изображений */
+max-width: 100%; /* Ограничиваем ширину изображений */
 }
-
 .act {
-    float: right;
-    padding-left: 8px;
+float: right;
+padding-left: 8px;
 }
-
 a.bt[href] {
-    opacity: 0.7; /* Прозрачность для ссылок */
+opacity: 0.7; /* Прозрачность для ссылок */
 }
-
 a.pt[href] {
-    opacity: 0.75; /* Прозрачность для подзаголовков */
+opacity: 0.75; /* Прозрачность для подзаголовков */
 }
-
 h1, h2, h3 {
-    text-align: center; /* Центрируем заголовки */
-    font-weight: bold;
+text-align: center; /* Центрируем заголовки */
+font-weight: bold;
 }
-
 h4 {
-   padding-left: 25px;
-   }
-
+padding-left: 25px;
+}
 .centered-image {
-    display: block; /* Делает изображение блочным элементом */
-    margin: 0 auto; /* Центрирует изображение */
+display: block; /* Делает изображение блочным элементом */
+margin: 0 auto; /* Центрирует изображение */
 }
-
-input[type="text"] {
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    width: 700px;
+input[type="text"],
+input[type="password"],
+input[type="search"] {
+margin-bottom: 10px;
+padding: 10px;
+border: 1px solid #ccc;
+border-radius: 5px;
+width: 700px;
 }
-
 textarea {
-    margin-bottom: 1px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    height: 250px;
-    width: 700px;
+margin-bottom: 1px;
+padding: 10px;
+border: 1px solid #ccc;
+border-radius: 5px;
+height: 250px;
+width: 700px;
 }
-
-
 .bt, button {
-    padding: 10px;
-    background-color: #3A3A3A;
-    color: #00000;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    width: 150px; /* Ширина кнопки */
-    height: 35px; /* Высота кнопки */
-    padding: 10px 20px; /* Внутренние отступы: сверху/снизу и слева/справа */
-    font-size: 12px; /* Размер шрифта */
-    font-weight: bold; /* Жирный шрифт */
-    border: none; /* Убираем рамку */
+padding: 10px;
+background-color: #3A3A3A;
+color: #00000;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+width: 150px; /* Ширина кнопки */
+height: 35px; /* Высота кнопки */
+padding: 10px 20px; /* Внутренние отступы: сверху/снизу и слева/справа */
+font-size: 12px; /* Размер шрифта */
+font-weight: bold; /* Жирный шрифт */
+border: none; /* Убираем рамку */
 }
