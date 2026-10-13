@@ -452,6 +452,7 @@ if (empty($_SESSION['authorized'])):
 </head>
 <body>
 <div class="page">
+<article class="p">
     <h2 class="pt">Вход в панель управления</h2>
 
     <?php if ($loginError !== ''): ?>
@@ -461,7 +462,7 @@ if (empty($_SESSION['authorized'])):
     <form method="post">
         <input type="hidden" name="action" value="login">
         <input
-            type="text"
+            type="login"
             name="login"
             placeholder="Логин"
             autocomplete="username"
@@ -476,7 +477,9 @@ if (empty($_SESSION['authorized'])):
             required
         >
         <br>
+
         <button type="submit" class="bt">Войти</button>
+	</article>
     </form>
 </div>
 </body>
@@ -606,7 +609,7 @@ if ($searching) {
 </head>
 <body>
 <div class="page">
-    <p><a href="?logout=1">Выйти</a></p>
+    <p><a  type="submit" class="bts" href="?logout=1">Выйти</a></p>
 
     <?php if ($error !== ''): ?>
         <p><?= escape($error) ?></p>

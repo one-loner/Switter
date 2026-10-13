@@ -146,8 +146,19 @@ $visiblePosts = $posts;
 <body>
 <div class="page">
 <div class="container">
+<article class="at">
 <h1>Standalone blog</h1>
+</article>
+<article class="pi">
 <h4>Description</h4>
+<hr>
+<!-- Здесь вы можете добавить шапку блога (Опционально) 
+Для этого удалите комментарий
+<article class="p">
+Шапка блога
+</article>
+-->
+</article>
 <?php if ($searching): ?>
 <p>
 Найдено в опубликованных записях: <?= count($visiblePosts) ?>.
