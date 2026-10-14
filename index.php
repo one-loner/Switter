@@ -273,14 +273,13 @@ if ($searching) {
         <article class="pi">
             <h4>Description</h4>
             <hr>
-	        </article>
             <!-- Здесь вы можете добавить шапку блога (Опционально)
             Для этого удалите комментарий
             <article class="p">
             Шапка блога
             </article>
             -->
-
+        </article>
 
         <?php if ($searching): ?>
             <p>
@@ -308,8 +307,12 @@ if ($searching) {
                 </h2>
 
                 <?php if (!empty($post['created_at'])): ?>
+                    <?php $createdAt = strtotime((string)$post['created_at']); ?>
                     <p style="margin: -12px 0 12px; text-align: left; font-size: 0.85rem; color: #666;">
-                        Опубликовано: <?= escapeHtml((string)$post['created_at']) ?>
+                        Опубликовано:
+                        <?= $createdAt !== false
+                            ? date('H:i d.m.Y', $createdAt)
+                            : escapeHtml((string)$post['created_at']) ?>
                     </p>
                 <?php endif; ?>
 

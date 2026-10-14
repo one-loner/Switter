@@ -8,7 +8,6 @@ session_start();
  */
 const ADMIN_LOGIN = 'admin';
 const ADMIN_PASSWORD_HASH = 'ВСТАВЬТЕ_ХЕШ_СЮДА';
-
 const POSTS_FILE = __DIR__ . '/posts.json';
 const UPLOAD_DIR = __DIR__ . '/uploads';
 const ARCHIVE_DIR = __DIR__ . '/archive';
@@ -759,13 +758,18 @@ if ($searching) {
             </h2>
 
             <?php if (!empty($post['created_at'])): ?>
+                <?php $createdAt = strtotime((string)$post['created_at']); ?>
                 <p style="margin: -12px 0 12px; text-align: left; font-size: 0.85rem; color: #666;">
-                    Опубликовано: <?= escape((string)$post['created_at']) ?>
+                    Опубликовано:
+                    <?= $createdAt !== false
+                        ? date('H:i d.m.Y', $createdAt)
+                        : escape((string)$post['created_at']) ?>
                 </p>
             <?php endif; ?>
 
             <?php
             $image = $post['image'] ?? null;
+
             if (
                 is_string($image) &&
                 preg_match('/\A[a-f0-9]{32}\.(jpg|png|gif|webp)\z/', $image)
