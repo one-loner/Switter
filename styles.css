@@ -111,7 +111,7 @@ color: #00000;
 border: none;
 border-radius: 5px;
 cursor: pointer;
-width: 150px; /* Ширина кнопки */
+width: 140px; /* Ширина кнопки */
 height: 35px; /* Высота кнопки */
 padding: 10px 20px; /* Внутренние отступы: сверху/снизу и слева/справа */
 font-size: 12px; /* Размер шрифта */

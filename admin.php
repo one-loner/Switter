@@ -669,7 +669,9 @@ if ($searching) {
             <button type="button" onclick="wrapText('__')"><u>Ч</u></button>
             <button type="button" onclick="wrapText('~~')"><s>З</s></button>
             <button type="button" onclick="insertLink()">Ссылка</button>
+
         </div>
+	<br>
 
         <textarea
             id="post-content"
