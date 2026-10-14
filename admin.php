@@ -1,6 +1,5 @@
 <?php
 declare(strict_types=1);
-
 session_start();
 
 /*
@@ -9,6 +8,7 @@ session_start();
  */
 const ADMIN_LOGIN = 'admin';
 const ADMIN_PASSWORD_HASH = 'ВСТАВЬТЕ_ХЕШ_СЮДА';
+
 const POSTS_FILE = __DIR__ . '/posts.json';
 const UPLOAD_DIR = __DIR__ . '/uploads';
 const ARCHIVE_DIR = __DIR__ . '/archive';
@@ -103,7 +103,6 @@ function searchArchivePosts(string $query): array
         }
 
         $html = file_get_contents($archiveFile);
-
         if ($html === false) {
             continue;
         }
@@ -150,36 +149,55 @@ function searchArchivePosts(string $query): array
 }
 
 /**
- * Экранирует содержимое, распознаёт маркеры форматирования
- * и превращает URL в кликабельные ссылки.
+ * Экранирует содержимое, распознаёт маркеры форматирования,
+ * Markdown-ссылки и обычные URL.
  *
  * Поддерживаемые маркеры:
  * **текст** — жирный
  * *текст* — курсив
  * __текст__ — подчёркнутый
+ * ~~текст~~ — зачёркнутый
+ * [название](https://ссылка) — ссылка
  */
 function formatContent(string $content): string
 {
     $escaped = escape($content);
 
     $formatted = preg_replace_callback(
-        '/\*\*(.+?)\*\*|\*(.+?)\*|__(.+?)__/us',
+        '/\*\*(.+?)\*\*|~~(.+?)~~|\*(.+?)\*|__(.+?)__/us',
         static function (array $matches): string {
             if (($matches[1] ?? '') !== '') {
                 return '<strong>' . $matches[1] . '</strong>';
             }
 
             if (($matches[2] ?? '') !== '') {
-                return '<em>' . $matches[2] . '</em>';
+                return '<s>' . $matches[2] . '</s>';
             }
 
-            return '<u>' . $matches[3] . '</u>';
+            if (($matches[3] ?? '') !== '') {
+                return '<em>' . $matches[3] . '</em>';
+            }
+
+            return '<u>' . $matches[4] . '</u>';
         },
         $escaped
     ) ?? $escaped;
 
+    // В Markdown-ссылках разрешены только схемы http и https.
+    $formatted = preg_replace_callback(
+        '~\[([^\]\r\n]+)\]\((https?://[^\s)]+)\)~iu',
+        static function (array $matches): string {
+            return '<a href="' . $matches[2]
+                . '" target="_blank" rel="noopener noreferrer">'
+                . $matches[1]
+                . '</a>';
+        },
+        $formatted
+    ) ?? $formatted;
+
+    // Не превращаем URL внутри уже созданных ссылок в ещё одну ссылку.
     $parts = preg_split(
-        '/(<\/?(?:strong|em|u)>)/',
+        '/(<\/?(?:strong|em|u|s)>|<a\b[^>]*>|<\/a>)/i',
         $formatted,
         -1,
         PREG_SPLIT_DELIM_CAPTURE
@@ -189,8 +207,24 @@ function formatContent(string $content): string
         return nl2br($escaped, false);
     }
 
+    $insideLink = false;
+
     foreach ($parts as &$part) {
-        if (preg_match('/^<\/?(?:strong|em|u)>$/', $part)) {
+        if (preg_match('/^<a\b/i', $part)) {
+            $insideLink = true;
+            continue;
+        }
+
+        if (strcasecmp($part, '</a>') === 0) {
+            $insideLink = false;
+            continue;
+        }
+
+        if (preg_match('/^<\/?(?:strong|em|u|s)>$/i', $part)) {
+            continue;
+        }
+
+        if ($insideLink) {
             continue;
         }
 
@@ -452,40 +486,39 @@ if (empty($_SESSION['authorized'])):
 </head>
 <body>
 <div class="page">
-<article class="p">
-    <h2 class="pt">Вход в панель управления</h2>
+    <article class="p">
+        <h2 class="pt">Вход в панель управления</h2>
 
-    <?php if ($loginError !== ''): ?>
-        <p><?= escape($loginError) ?></p>
-    <?php endif; ?>
+        <?php if ($loginError !== ''): ?>
+            <p><?= escape($loginError) ?></p>
+        <?php endif; ?>
 
-    <form method="post">
-        <input type="hidden" name="action" value="login">
-        <input
-            type="login"
-            name="login"
-            placeholder="Логин"
-            autocomplete="username"
-            required
-        >
-        <br>
-        <input
-            type="password"
-            name="password"
-            placeholder="Пароль"
-            autocomplete="current-password"
-            required
-        >
-        <br>
-
-        <button type="submit" class="bt">Войти</button>
-	</article>
-    </form>
+        <form method="post">
+            <input type="hidden" name="action" value="login">
+            <input
+                type="login"
+                name="login"
+                placeholder="Логин"
+                autocomplete="username"
+                required
+            >
+            <br>
+            <input
+                type="password"
+                name="password"
+                placeholder="Пароль"
+                autocomplete="current-password"
+                required
+            >
+            <br>
+            <button type="submit" class="bt">Войти</button>
+        </form>
+    </article>
 </div>
 </body>
 </html>
 <?php
-exit;
+    exit;
 endif;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -564,7 +597,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $posts = loadPosts();
-
 $query = trim((string)($_GET['q'] ?? ''));
 
 if (function_exists('mb_substr')) {
@@ -609,7 +641,7 @@ if ($searching) {
 </head>
 <body>
 <div class="page">
-    <p><a  type="submit" class="bts" href="?logout=1">Выйти</a></p>
+    <p><a type="submit" class="bts" href="?logout=1">Выйти</a></p>
 
     <?php if ($error !== ''): ?>
         <p><?= escape($error) ?></p>
@@ -636,6 +668,8 @@ if ($searching) {
             <button type="button" onclick="wrapText('**')"><strong>Ж</strong></button>
             <button type="button" onclick="wrapText('*')"><em>К</em></button>
             <button type="button" onclick="wrapText('__')"><u>Ч</u></button>
+            <button type="button" onclick="wrapText('~~')"><s>З</s></button>
+            <button type="button" onclick="insertLink()">Ссылка</button>
         </div>
 
         <textarea
@@ -667,7 +701,36 @@ if ($searching) {
             end,
             'select'
         );
+        textarea.focus();
+    }
 
+    function insertLink() {
+        const textarea = document.getElementById('post-content');
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selected = textarea.value.slice(start, end) || 'название';
+        const input = prompt(
+            'Введите URL (http:// или https://):',
+            'https://'
+        );
+
+        if (input === null) {
+            return;
+        }
+
+        const url = input.trim();
+
+        if (!/^https?:\/\/\S+$/i.test(url)) {
+            alert('Введите URL, начинающийся с http:// или https://');
+            return;
+        }
+
+        textarea.setRangeText(
+            '[' + selected + '](' + url + ')',
+            start,
+            end,
+            'select'
+        );
         textarea.focus();
     }
     </script>
@@ -695,16 +758,14 @@ if ($searching) {
                 <?= escape((string)($post['title'] ?? '')) ?>
             </h2>
 
-	<?php if (!empty($post['created_at'])): ?>
-	<p style="margin: -12px 0 12px; text-align: left; font-size: 0.85rem; color: #666;">
-	Опубликовано: <?= escape((string)$post['created_at']) ?>
-	</p>
-	<?php endif; ?>
-
+            <?php if (!empty($post['created_at'])): ?>
+                <p style="margin: -12px 0 12px; text-align: left; font-size: 0.85rem; color: #666;">
+                    Опубликовано: <?= escape((string)$post['created_at']) ?>
+                </p>
+            <?php endif; ?>
 
             <?php
             $image = $post['image'] ?? null;
-
             if (
                 is_string($image) &&
                 preg_match('/\A[a-f0-9]{32}\.(jpg|png|gif|webp)\z/', $image)
@@ -749,11 +810,9 @@ if ($searching) {
         <?php foreach ($archiveResults as $result): ?>
             <article class="p">
                 <h3 class="pt"><?= escape($result['title']) ?></h3>
-
                 <p class="pg">
                     <?= nl2br(escape($result['content']), false) ?>
                 </p>
-
                 <p>
                     Архив:
                     <a href="<?= 'archive/' . rawurlencode($result['archive']) ?>">
